@@ -1,7 +1,6 @@
 package clases;
 
 import java.awt.*;
-import java.util.Vector;
 
 import javax.swing.*;
 
@@ -11,7 +10,7 @@ public class Vista extends JFrame{
 
 	private JMenuBar mb;
 	private JMenu m_nueva, m_opciones, m_ayuda;
-	private JMenuItem mi_nuevaMision, mi_modificarValores, mi_acercaDe;
+	private JMenuItem mi_nuevaMision, mi_eliminarMision, mi_modificarValores, mi_acercaDe;
 	
 	private JLabel lbllvl, lbltotalexp, lblexptolvlup;
 	private JProgressBar bar;
@@ -23,10 +22,11 @@ public class Vista extends JFrame{
 	
 	private void crearComponentes() {
 		this.mb = new JMenuBar();
-		this.m_nueva = new JMenu("Nueva");
+		this.m_nueva = new JMenu("Misión");
 		this.m_opciones = new JMenu("Opciones");
 		this.m_ayuda = new JMenu("Ayuda");
 		this.mi_nuevaMision = new JMenuItem("Nueva Mision");
+		this.mi_eliminarMision = new JMenuItem("Eliminar Mision");
 		this.mi_modificarValores = new JMenuItem("Modificar Valores");
 		this.mi_acercaDe = new JMenuItem("Acerca de..");
 		
@@ -52,6 +52,7 @@ public class Vista extends JFrame{
 		this.setJMenuBar(this.mb);
 		this.mb.add(this.m_nueva);
 			this.m_nueva.add(this.mi_nuevaMision);
+			this.m_nueva.add(this.mi_eliminarMision);
 		this.mb.add(this.m_opciones);
 			this.m_opciones.add(this.mi_modificarValores);
 		this.mb.add(this.m_ayuda);
@@ -75,6 +76,7 @@ public class Vista extends JFrame{
 		this.btn_editar.addActionListener(c);
 		this.btn_completar.addActionListener(c);
 		this.mi_nuevaMision.addActionListener(c);
+		this.mi_eliminarMision.addActionListener(c);
 		this.mi_modificarValores.addActionListener(c);
 		this.mi_acercaDe.addActionListener(c);
 	}
@@ -123,6 +125,10 @@ public class Vista extends JFrame{
 
 	public JButton getBtn_completar() {
 		return btn_completar;
+	}
+
+	public JMenuItem getMi_eliminarMision() {
+		return mi_eliminarMision;
 	}
 	
 	

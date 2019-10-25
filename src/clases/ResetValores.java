@@ -3,22 +3,14 @@ package clases;
 import java.io.*;
 import java.util.LinkedList;
 
-public class CargarDatos {
+public class ResetValores {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
-		Valores v = new Valores(10,1.1f,50,true);
+		Valores v = new Valores(10,1f,50,true);
 		
 		LinkedList<Mision> misiones = new LinkedList<Mision>();
-		Mision m1 = new Mision(5, "colada", "haz la colada",false);
-		Mision m2 = new Mision(12, "cocina", "limpia la cocina",false);
-		Mision m3 = new Mision(4, "empresas", "haz los ejercicios",true);
-		Mision m4 = new Mision(8, "daw", "haz los ejercicios",true);
-		misiones.add(m1);
-		misiones.add(m2);
-		misiones.add(m3);
-		misiones.add(m4);
 		FileOutputStream f = null;
 		ObjectOutputStream o = null;
 		try {

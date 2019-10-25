@@ -1,6 +1,5 @@
 package clases;
 
-import javax.swing.JFrame;
 
 public class Main {
 

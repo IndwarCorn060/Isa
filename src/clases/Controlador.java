@@ -5,9 +5,9 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -32,6 +32,7 @@ public class Controlador extends WindowAdapter implements ActionListener{
 		this.cargarDatos();
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void cargarDatos() {
 		File fichero = new File("./res/data.txt");
 		try {
@@ -92,16 +93,59 @@ public class Controlador extends WindowAdapter implements ActionListener{
 		int base = this.valores.getExpToLvlUpBase();
 		float mod = this.valores.getModificadorLvlUp();
 		int lvl = 0;
-		while(exp>base*mod) {
-			exp-=base*mod;
-			base=(int) (base*mod);
-			lvl++;
+		int limite = this.valores.getLimite();
+		boolean lineal = this.valores.isLineal();
+		if(limite==0) {
+			if(lineal) {
+				while(exp>=base) {
+					exp-=base;
+					base+=mod;
+					lvl++;
+				}
+			}
+			else {//exponencial
+				while(exp>=base) {
+					exp-=base;
+					base=base+(int)(base*mod);
+					lvl++;
+				}
+			}
+		}
+		else {//hay limite
+			if(lineal) {
+				while(exp>=base&&limite>base) {
+					exp-=base;
+					base+=mod;
+					lvl++;
+				}
+				if(limite<=base) {
+					base=limite;
+					while(exp>=base) {
+						exp-=base;
+						lvl++;
+					}
+				}
+			}
+			else {//exponencial
+				while(exp>=base&&limite>base) {
+					exp-=base;
+					base=base+(int)(base*mod);
+					lvl++;
+				}
+				if(limite<=base) {
+					base=limite;
+					while(exp>=base) {
+						exp-=base;
+						lvl++;
+					}
+				}
+			}
 		}
 		this.v.getLbllvl().setText(lvl+"");
 		bar.setMinimum(0);
-		bar.setMaximum((int)(base*mod));
+		bar.setMaximum(base);
 		bar.setValue(exp);
-		this.v.getLblexptolvlup().setText("Exp para subir: "+((int)(base*mod)-exp));
+		this.v.getLblexptolvlup().setText("Exp para subir: "+(base-exp));
 	}
 	
 	private void actualizarTabla() {
@@ -154,8 +198,8 @@ public class Controlador extends WindowAdapter implements ActionListener{
 		return (Mision) it.next();
 	} 
 	
-	private void editarMision(int fila) {
-		Mision m = getMision(fila);
+	private void editarMision() {
+		Mision m = getMision(this.v.getTabla().getSelectedRow());
 		System.out.println(m.toString());
 		
 		JTextField nombre = new JTextField(10);
@@ -173,7 +217,7 @@ public class Controlador extends WindowAdapter implements ActionListener{
 	    panel1.add(nombre);
 	    panel.add(panel1);
 	    JPanel panel2 = new JPanel();
-	    panel2.add(new JLabel("Descripcion"));
+	    panel2.add(new JLabel("Descripcion:"));
 	    panel.add(panel2);
 	    panel.add(scroll);
 	    JPanel panel3 = new JPanel();
@@ -186,19 +230,24 @@ public class Controlador extends WindowAdapter implements ActionListener{
 	    if (result == JOptionPane.OK_OPTION) {
 	         try {
 				int expe = Integer.parseInt(exp.getText().toString());
-				m.setNombre(nombre.getText().toString());
-				m.setDescripcion(descripcion.getText().toString());
-				m.setExp(expe);
-				this.actualizarTabla();
-				this.actualizarBarra();
+				if(expe>=0) {
+					m.setNombre(nombre.getText().toString());
+					m.setDescripcion(descripcion.getText().toString());
+					m.setExp(expe);
+					this.actualizarTabla();
+					this.actualizarBarra();
+				}
+				else {
+					JOptionPane.showMessageDialog(null, "La Experiencia debe ser\nmayor o igual a 0", "Error", JOptionPane.ERROR_MESSAGE);
+				}
 			} catch (NumberFormatException  e) {
 				JOptionPane.showMessageDialog(null, "Error al introducir datos", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 	      }
 	}
 	
-	private void completarMision(int fila) {
-		Mision m = getMision(fila);
+	private void completarMision() {
+		Mision m = getMision(this.v.getTabla().getSelectedRow());
 		if(m.isCompletada()) {
 			int dialogResult = JOptionPane.showConfirmDialog (null, "¿Revertir la mision al estado\nde no completada?","Confirmacion",JOptionPane.YES_NO_OPTION);
 			if(dialogResult == JOptionPane.YES_OPTION){
@@ -230,7 +279,7 @@ public class Controlador extends WindowAdapter implements ActionListener{
 	    panel1.add(nombre);
 	    panel.add(panel1);
 	    JPanel panel2 = new JPanel();
-	    panel2.add(new JLabel("Descripcion"));
+	    panel2.add(new JLabel("Descripcion:"));
 	    panel.add(panel2);
 	    panel.add(scroll);
 	    JPanel panel3 = new JPanel();
@@ -246,7 +295,7 @@ public class Controlador extends WindowAdapter implements ActionListener{
 				int expe = Integer.parseInt(exp.getText().toString());
 				String nombr = nombre.getText().toString();
 				String descrip = descripcion.getText().toString();
-				if(nombr.equals("")||descrip.equals("")) {
+				if(nombr.equals("")||descrip.equals("")||expe<0) {
 					JOptionPane.showMessageDialog(null, "Error al introducir datos", "Error", JOptionPane.ERROR_MESSAGE);
 				}
 				else {
@@ -261,28 +310,136 @@ public class Controlador extends WindowAdapter implements ActionListener{
 	      }
 	}
 	
+	private void modificarValores() {
+		JRadioButton jr_lineal = new JRadioButton("Lineal");
+		JRadioButton jr_exponencial = new JRadioButton("Exponencial");
+		ButtonGroup g = new ButtonGroup();
+		g.add(jr_lineal);
+		g.add(jr_exponencial);
+		if(this.valores.isLineal()) {
+			jr_lineal.setSelected(true);
+		}
+		else {
+			jr_exponencial.setSelected(true);
+		}
+		JTextField txtf_base = new JTextField(5);
+		txtf_base.setText(this.valores.getExpToLvlUpBase()+"");
+		txtf_base.setToolTipText("valores enteros mayor a 0");
+	    JTextField txtf_mod = new JTextField(5);
+	    txtf_mod.setText(this.valores.getModificadorLvlUp()+"");
+	    txtf_mod.setToolTipText("Lineal: pendiente, valor entero. 0=no pendiente. Exponencial: valores decimales. Recomendacion entre 0 y 1");
+	    JCheckBox jcb_limite = new JCheckBox("Limite");
+	    jcb_limite.setSelected(true);
+	    JTextField txtf_limite = new JTextField(5);
+	    if(this.valores.getLimite()==0) {
+		    jcb_limite.setSelected(false);
+		    txtf_limite.setText("0");
+		    txtf_limite.setEnabled(false);
+	    }
+	    else {
+	    	txtf_limite.setText(this.valores.getLimite()+"");
+	    }
+	    txtf_limite.setToolTipText("la base alcanzara este limite y no subira mas. 0=no limite");
+	    jcb_limite.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if(e.getStateChange()==ItemEvent.SELECTED) {
+                	txtf_limite.setEnabled(true);
+                }else {
+                	txtf_limite.setEnabled(false);
+                }
+            }
+        });
+	    
+	    JPanel panel = new JPanel();
+	    panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+	    JPanel panel0 = new JPanel();
+	    panel0.add(jr_lineal);
+	    panel0.add(jr_exponencial);
+	    panel.add(panel0);
+	    JPanel panel1 = new JPanel();
+	    panel1.add(new JLabel("Base:"));
+	    panel1.add(txtf_base);
+	    panel.add(panel1);
+	    JPanel panel2 = new JPanel();
+	    panel2.add(new JLabel("Modificador:"));
+	    panel2.add(txtf_mod);
+	    panel.add(panel2);
+	    JPanel panel3 = new JPanel();
+	    panel3.add(jcb_limite);
+	    panel3.add(txtf_limite);
+	    panel.add(panel3);
+
+	    int result = JOptionPane.showConfirmDialog(null, panel, 
+	               "Editar Valores", JOptionPane.OK_CANCEL_OPTION);
+	    if (result == JOptionPane.OK_OPTION) {
+	         try {
+	        	 boolean lineal = jr_lineal.isSelected();
+	        	 int base = Integer.parseInt(txtf_base.getText().toString());
+	        	 float mod = Float.parseFloat(txtf_mod.getText().toString());
+	        	 int limite = 0;
+	        	 if(jcb_limite.isSelected()) {
+	        		 limite = Integer.parseInt(txtf_limite.getText().toString());
+	        	 }
+	        	 if(base<=0||mod<0||limite<0) {
+	        		 JOptionPane.showMessageDialog(null, "Numero negativos o 0", "Error", JOptionPane.ERROR_MESSAGE);
+	        	 }
+	        	 else {
+	        		 this.valores.setLineal(lineal);
+	        		 this.valores.setExpToLvlUpBase(base);
+	        		 this.valores.setModificadorLvlUp(mod);
+	        		 this.valores.setLimite(limite);
+	        		 this.actualizarTabla();
+	        		 this.actualizarBarra();
+	        	 }
+			} catch (NumberFormatException  e) {
+				JOptionPane.showMessageDialog(null, "Error al introducir los numeros", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+	      }
+	}
+	
+	private void eliminarMision() {
+
+	    int result = JOptionPane.showConfirmDialog (null, "¿Borrar la mision seleccionada?","Confirmacion",JOptionPane.YES_NO_OPTION);
+	    if (result == JOptionPane.OK_OPTION) {
+	    	this.misiones.remove(this.v.getTabla().getSelectedRow());
+			this.actualizarTabla();
+			this.actualizarBarra();
+	    }
+	}
+	
+	private void ayuda() {
+		JOptionPane.showMessageDialog(null, "Version 1.0\nTelegram: @IndwarCorn060", "Ayuda", JOptionPane.INFORMATION_MESSAGE);
+	}
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
 		if(e.getSource() == this.v.getBtn_editar()) {
 			//System.out.println(this.v.getTabla().getSelectedColumn()+" "+this.v.getTabla().getSelectedRow());
 			if(this.v.getTabla().getSelectedRow()!=-1) {
-				this.editarMision(this.v.getTabla().getSelectedRow());
+				this.editarMision();
 			}else {
 				System.out.println("mision no seleccionada");
 			}
 		}else if(e.getSource() == this.v.getBtn_completar()) {
 			if(this.v.getTabla().getSelectedRow()!=-1) {
-				this.completarMision(this.v.getTabla().getSelectedRow());
+				this.completarMision();
 			}else {
 				System.out.println("mision no seleccionada");
 			}
 		}else if(e.getSource() == this.v.getMi_nuevaMision()) {
 			this.nuevaMision();
+		}else if(e.getSource() == this.v.getMi_eliminarMision()) {
+			if(this.v.getTabla().getSelectedRow()!=-1) {
+				this.eliminarMision();
+			}else {
+				System.out.println("mision no seleccionada");
+			}
 		}else if(e.getSource() == this.v.getMi_modificarValores()) {
-			
+			this.modificarValores();
 		}else if(e.getSource() == this.v.getMi_acercaDe()) {
-			System.out.println("hola");
+			this.ayuda();
 		}
 	}
 
